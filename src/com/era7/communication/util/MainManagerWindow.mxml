@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResizableTitleWindow xmlns="com.era7.util.gui.window.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="450" height="300" layout="absolute" title="Main Manager state"
+	creationComplete="onCreationComplete()">
+	<states>
+		<mx:State name="StoppedState">
+			<mx:RemoveChild target="{stopButton}"/>
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+				<mx:Button label="Resume" right="0" bottom="0" id="resumeButton" click="onResumeButtonClick()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+				<mx:NumericStepper stepSize="1" minimum="1" maximum="30" enabled="true" 
+					id="pollingIntervalNummericStepper" left="100" bottom="0"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+				<mx:Label text="(seconds)" fontStyle="italic" left="166" bottom="2"/>
+			</mx:AddChild>
+		</mx:State>
+	</states>
+	<mx:Script>
+		<![CDATA[
+			import com.era7.util.time.TimerEstimator;
+			import com.era7.communication.managers.MainManagerFactory;
+			import com.era7.communication.managers.MainManager;
+			
+			
+			protected var DEFAULT_WIDTH:int = 450;
+			protected var DEFAULT_HEIGHT:int = 300;
+			
+			//----timer vars-----
+			[Bindable]
+			protected var timerInterval:int = 1000;
+			protected var timer:Timer = null;
+			
+			
+			
+			//-----------STATES-------------
+			protected const BASE_STATE:String = "";
+			protected const STOPPED_STATE:String = "StoppedState";
+			//---------------------------------------------------
+			
+			//---main Manager
+			protected var mainManager:MainManager = null;
+			//----main manager counters----
+			[Bindable]
+			protected var errorResponses:int = 0;
+			[Bindable]
+			protected var requests:int = 0;
+			[Bindable]
+			protected var successfulResponses:int = 0;
+			[Bindable]
+			protected var timeoutRequests:int = 0;
+			[Bindable]
+			protected var basicManagersCounter:int = 0;
+			//---------------------------------
+			
+			
+			/**
+			 * 	CREATION COMPLETE
+			 */
+			protected function onCreationComplete():void{
+				
+				mainManager = MainManagerFactory.getMainManager();
+				
+				timer = new Timer(timerInterval);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+
+				timer.start();
+				
+			}
+			
+			
+			/**
+			 * 	ON TIMER
+			 */
+			protected function onTimer(event:TimerEvent):void{
+				this.errorResponses = mainManager.getErrorResponseNumber();
+				this.successfulResponses = mainManager.getSuccessfulResponseNumber();
+				this.timeoutRequests = mainManager.getTimeoutRequestNumber();
+				this.requests = mainManager.getRequestNumber();
+				
+				this.basicManagersCounter = mainManager.getBasicManagersNumber();
+			}
+			
+			/**
+			 * 	STOP BUTTON CLICK
+			 */
+			protected function onStopButtonClick():void{
+				timer.stop();
+				this.currentState = STOPPED_STATE;
+			}
+			/**
+			 * 	RESUME BUTTON CLICK
+			 */
+			protected function onResumeButtonClick():void{
+				timerInterval = int(pollingIntervalNummericStepper.value)*1000;				
+				timer = new Timer(timerInterval);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+				timer.start();
+				this.currentState = BASE_STATE;
+			}
+				
+			
+		]]>
+	</mx:Script>
+	<mx:Canvas left="0" top="0" right="0" bottom="0" id="canvas1">
+		<mx:Button label="Stop" id="stopButton" click="onStopButtonClick()" right="0" bottom="0"/>
+		<mx:Label left="131" top="0" id="requestNumberLabel" text="{requests}"/>
+		<mx:Label text="Responses:" fontWeight="bold" left="0" top="22"/>
+		<mx:HBox width="100%" left="0" top="58">
+			<mx:Label text="Timeout:" fontWeight="bold"/>
+			<mx:Label id="timeoutResponsesLabel" text="{timeoutRequests}"/>
+			<mx:Label text="Error" fontWeight="bold"/>
+			<mx:Label text="{errorResponses}" id="asdf"/>
+		</mx:HBox>
+		<mx:Label text="Polling interval:" left="0" bottom="2"/>
+		<mx:Label left="100" bottom="2" text="{timerInterval}"/>
+		<mx:HBox width="100%" left="0" top="84">
+			<mx:Label text="BasicManagers used:" fontWeight="bold"/>
+			<mx:Label text="{basicManagersCounter}"/>
+		</mx:HBox>
+	</mx:Canvas>
+	<mx:Label text="Requests performed:" fontWeight="bold" left="0" top="0"/>
+	<mx:HBox width="100%" left="0" top="40">
+		<mx:Label text="Successful:" fontWeight="bold"/>
+		<mx:Label text="{successfulResponses}" id="successfulResponsesLabel"/>
+	</mx:HBox>
+	
+</ResizableTitleWindow>
